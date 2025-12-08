@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node src/database/init.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "init-db": "node src/database/init.js"
