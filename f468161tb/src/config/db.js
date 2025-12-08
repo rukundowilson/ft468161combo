@@ -26,19 +26,51 @@ try {
 	console.warn('Could not read .env file directly:', err.message);
 }
 
-// Get database user - if USER in .env is empty, use 'root'
-const dbUser = envVars.USER === '' || envVars.USER === undefined 
-	? 'root' 
-	: (envVars.USER || process.env.DB_USER || 'root');
+// Get database configuration
+// Priority: Standard DB_* variables > Render custom vars (HOST, USER, etc.) > .env file > defaults
+// Note: On Linux, USER is a system variable, so we must check Render's env vars before process.env.USER
+const dbHost = process.env.DB_HOST 
+	|| process.env.HOST  // Render uses HOST for database host
+	|| envVars.HOST 
+	|| 'localhost';
 
-// Log connection details (without password) for debugging
-// Note: Use DB_PORT explicitly to avoid conflicts with APP_PORT
-const dbHost = envVars.HOST || process.env.HOST || process.env.DB_HOST || 'localhost';
-const dbName = envVars.DATABASENAME || process.env.DATABASENAME || process.env.DB_NAME || 'test';
-// Prioritize DB_PORT over PORT to avoid conflicts with application port
-const dbPort = parseInt(envVars.DB_PORT || process.env.DB_PORT || envVars.PORT || process.env.PORT || '3306');
+// For USER, we need to check Render's env var first (from .env file or explicit setting)
+// because process.env.USER is a system variable on Linux
+const dbUser = process.env.DB_USER 
+	|| envVars.USER  // Check .env file first
+	|| (process.env.USER && process.env.USER !== 'render' ? process.env.USER : null) // Only use if not system default
+	|| 'root';
 
-console.log('Database connection config:');
+const dbName = process.env.DB_NAME 
+	|| process.env.DATABASENAME  // Render uses DATABASENAME
+	|| envVars.DATABASENAME 
+	|| 'test';
+
+// Prioritize DB_PORT to avoid conflicts with APP_PORT
+// Render uses PORT for database port, but we check DB_PORT first
+const dbPort = parseInt(
+	process.env.DB_PORT 
+	|| process.env.PORT  // Render uses PORT for database port (3306)
+	|| envVars.DB_PORT 
+	|| envVars.PORT 
+	|| '3306'
+);
+
+const dbPassword = process.env.DB_PASSWORD 
+	|| process.env.PASSWORD  // Render uses PASSWORD
+	|| envVars.PASSWORD 
+	|| '';
+
+// Debug: Log environment variables (without sensitive data)
+console.log('Environment variables check:');
+console.log(`  process.env.HOST: ${process.env.HOST || 'not set'}`);
+console.log(`  process.env.USER: ${process.env.USER || 'not set'}`);
+console.log(`  process.env.DATABASENAME: ${process.env.DATABASENAME || 'not set'}`);
+console.log(`  process.env.PORT: ${process.env.PORT || 'not set'}`);
+console.log(`  envVars.HOST: ${envVars.HOST || 'not set'}`);
+console.log(`  envVars.USER: ${envVars.USER || 'not set'}`);
+
+console.log('\nDatabase connection config:');
 console.log(`  Host: ${dbHost}`);
 console.log(`  User: ${dbUser}`);
 console.log(`  Database: ${dbName}`);
@@ -47,7 +79,7 @@ console.log(`  Port: ${dbPort}`);
 const pool = mysql.createPool({
 	host: dbHost,
 	user: dbUser,
-	password: envVars.PASSWORD || process.env.PASSWORD || process.env.DB_PASSWORD || '',
+	password: dbPassword,
 	database: dbName,
 	port: dbPort,
 	waitForConnections: true,
