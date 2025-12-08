@@ -185,7 +185,9 @@ export default function Transactions() {
                             <div className="text-sm text-gray-500">{user?.email}</div>
                         </div>
                         <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                            <span className="text-emerald-600 text-lg">👤</span>
+                            <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
                         </div>
                     </div>
                 </header>
@@ -270,7 +272,7 @@ export default function Transactions() {
 
                     {/* Add Transaction Form */}
                     {showForm && (
-                        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+                        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-sm mb-6">
                             <h3 className="text-xl font-semibold text-gray-900 mb-4">Add New Transaction</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -346,7 +348,7 @@ export default function Transactions() {
                     )}
 
                     {/* Filters Section */}
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6">
+                    <div className="bg-gray-50 rounded-lg shadow-sm p-4 mb-6">
                         <div className="flex items-center gap-2 mb-4">
                             <span>🔍</span>
                             <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
@@ -402,14 +404,14 @@ export default function Transactions() {
                     {/* Transactions List */}
                     <div className="space-y-3">
                         {filteredTransactions.length === 0 ? (
-                            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500">
+                            <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
                                 <p>No transactions found. {transactions.length === 0 ? 'Add your first transaction to get started!' : 'Try adjusting your filters.'}</p>
                             </div>
                         ) : (
                             filteredTransactions.map((transaction) => (
                                 <div
                                     key={transaction.id}
-                                    className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                                    className="bg-white rounded-lg shadow-sm p-4 transition-shadow"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4 flex-1">

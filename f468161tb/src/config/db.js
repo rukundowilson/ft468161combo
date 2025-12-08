@@ -3,10 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Database configuration
-// Supports both naming conventions:
-// - Local .env: DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
-// - Render: HOST, USER, PASSWORD, DATABASENAME, PORT
+
 const dbConfig = {
 	host: process.env.DB_HOST || 'localhost',
 	user: process.env.DB_USER || 'root',

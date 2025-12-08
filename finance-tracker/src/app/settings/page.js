@@ -43,7 +43,9 @@ export default function Settings() {
                             <div className="text-sm text-gray-500">{user?.email}</div>
                         </div>
                         <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                            <span className="text-emerald-600 text-lg">👤</span>
+                            <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
                         </div>
                     </div>
                 </header>
@@ -52,7 +54,7 @@ export default function Settings() {
                     <div className="max-w-4xl mx-auto">
                         <h2 className="text-3xl font-bold text-gray-900 mb-6">Settings</h2>
                         
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="bg-white rounded-lg shadow-sm p-6">
                             <h3 className="text-xl font-semibold mb-4">Account Settings</h3>
                             <div className="space-y-4">
                                 <div>

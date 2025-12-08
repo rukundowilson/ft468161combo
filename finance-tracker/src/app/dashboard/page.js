@@ -6,12 +6,15 @@ import { onAuthChange, getCurrentUser } from '@/lib/auth';
 import { syncCurrentUser } from '@/lib/userService';
 import { getTransactions, getTransactionSummary } from '@/lib/transactionService';
 import Sidebar from '@/app/components/Sidebar';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
   const [recentTransactions, setRecentTransactions] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
+  const [balanceTrendData, setBalanceTrendData] = useState([]);
   const [apiError, setApiError] = useState(null);
   const router = useRouter();
 
@@ -35,14 +38,20 @@ export default function Dashboard() {
         }
       }
 
-      // Load recent transactions (last 5)
+      // Load all transactions for chart
       const transResult = await getTransactions();
       console.log('Transactions result:', transResult);
       if (transResult.success) {
-        setRecentTransactions(transResult.transactions.slice(0, 5));
+        const transactions = transResult.transactions || [];
+        setAllTransactions(transactions);
+        setRecentTransactions(transactions.slice(0, 5));
+        // Calculate balance trend
+        calculateBalanceTrend(transactions);
       } else {
         console.error('Failed to load transactions:', transResult.error);
+        setAllTransactions([]);
         setRecentTransactions([]);
+        setBalanceTrendData([]);
         // Set error if not already set
         if (!apiError && (transResult.error?.includes('sleeping') || transResult.error?.includes('timeout'))) {
           setApiError('API server is sleeping or unreachable. Data may not be up to date.');
@@ -122,8 +131,123 @@ export default function Dashboard() {
     return `${month} ${day}`;
   };
 
+  const calculateBalanceTrend = (transactions) => {
+    if (!transactions || transactions.length === 0) {
+      setBalanceTrendData([]);
+      return;
+    }
+
+    // Sort all transactions by date (oldest first)
+    const sorted = [...transactions].sort((a, b) => 
+      new Date(a.transaction_date) - new Date(b.transaction_date)
+    );
+
+    // Calculate initial balance (sum of all transactions before the chart period)
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    // Calculate starting balance from transactions before the 30-day period
+    let startingBalance = 0;
+    sorted.forEach(transaction => {
+      const transDate = new Date(transaction.transaction_date);
+      if (transDate < thirtyDaysAgo) {
+        if (transaction.type === 'income') {
+          startingBalance += parseFloat(transaction.amount);
+        } else {
+          startingBalance -= parseFloat(transaction.amount);
+        }
+      }
+    });
+
+    // Group transactions by date within the 30-day period
+    const dateMap = new Map();
+    sorted.forEach(transaction => {
+      const transDate = new Date(transaction.transaction_date);
+      if (transDate >= thirtyDaysAgo) {
+        const dateKey = transDate.toISOString().split('T')[0];
+        if (!dateMap.has(dateKey)) {
+          dateMap.set(dateKey, []);
+        }
+        dateMap.get(dateKey).push(transaction);
+      }
+    });
+
+    // Generate data points for each day in the range
+    const trendData = [];
+    let currentBalance = startingBalance;
+
+    // Create array of all dates in range
+    for (let i = 0; i <= 30; i++) {
+      const date = new Date(thirtyDaysAgo);
+      date.setDate(date.getDate() + i);
+      const dateKey = date.toISOString().split('T')[0];
+      
+      // Add transactions for this date
+      const dayTransactions = dateMap.get(dateKey) || [];
+      dayTransactions.forEach(transaction => {
+        if (transaction.type === 'income') {
+          currentBalance += parseFloat(transaction.amount);
+        } else {
+          currentBalance -= parseFloat(transaction.amount);
+        }
+      });
+
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const day = date.getDate();
+      const isToday = dateKey === today.toISOString().split('T')[0];
+      const isFirst = i === 0;
+      const isLast = i === 30;
+      
+      // Include first day, last day, today, and every 5th day
+      if (isFirst || isLast || isToday || i % 5 === 0) {
+        trendData.push({
+          date: dateKey,
+          label: isToday ? 'Today' : isFirst ? `${month} ${day}` : `${month} ${day}`,
+          balance: Math.round(currentBalance * 100) / 100
+        });
+      }
+    }
+
+    // Ensure we have at least some data points
+    if (trendData.length === 0 && sorted.length > 0) {
+      // Fallback: show all transactions
+      sorted.forEach(transaction => {
+        if (transaction.type === 'income') {
+          currentBalance += parseFloat(transaction.amount);
+        } else {
+          currentBalance -= parseFloat(transaction.amount);
+        }
+        
+        const date = new Date(transaction.transaction_date);
+        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const day = date.getDate();
+        
+        trendData.push({
+          date: transaction.transaction_date,
+          label: `${month} ${day}`,
+          balance: Math.round(currentBalance * 100) / 100
+        });
+      });
+    }
+
+    setBalanceTrendData(trendData);
+  };
+
   const getTransactionIcon = (type) => {
-    return type === 'income' ? '📈' : '☕';
+    if (type === 'income') {
+      return (
+        <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      );
+    }
+    return (
+      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+      </svg>
+    );
   };
 
   if (loading) {
@@ -151,7 +275,9 @@ export default function Dashboard() {
               <div className="text-sm text-gray-500">{user?.email}</div>
             </div>
             <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-              <span className="text-emerald-600 text-lg">👤</span>
+              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
             </div>
           </div>
         </header>
@@ -180,7 +306,7 @@ export default function Dashboard() {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {/* Total Balance */}
-              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 relative">
+              <div className="bg-white rounded-lg shadow-sm p-6 relative">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">Total Balance</div>
@@ -189,13 +315,15 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <span className="text-2xl">💰</span>
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
                 </div>
               </div>
 
               {/* This Month Income */}
-              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 relative">
+              <div className="bg-white rounded-lg shadow-sm p-6 relative">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">This Month Income</div>
@@ -204,13 +332,15 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <span className="text-2xl">📈</span>
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
                   </div>
                 </div>
               </div>
 
               {/* This Month Expense */}
-              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 relative">
+              <div className="bg-white rounded-lg shadow-sm p-6 relative">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">This Month Expense</div>
@@ -219,26 +349,72 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <span className="text-2xl">📉</span>
+                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                    </svg>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Balance Trend Chart */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Balance Trend</h2>
-              <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                <div className="text-center text-gray-500">
-                  <div className="text-4xl mb-2">📊</div>
-                  <div>Chart visualization coming soon</div>
-                  <div className="text-sm mt-2">Balance data is available for chart integration</div>
+              {balanceTrendData.length > 0 ? (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={balanceTrendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="label" 
+                        stroke="#6b7280"
+                        style={{ fontSize: '12px' }}
+                        tick={{ fill: '#6b7280' }}
+                      />
+                      <YAxis 
+                        stroke="#6b7280"
+                        style={{ fontSize: '12px' }}
+                        tick={{ fill: '#6b7280' }}
+                        domain={['dataMin - 200', 'dataMax + 200']}
+                        tickFormatter={(value) => {
+                          if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+                          return `$${value}`;
+                        }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          padding: '8px'
+                        }}
+                        formatter={(value) => formatCurrency(value)}
+                        labelStyle={{ color: '#374151', fontWeight: '600' }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="balance" 
+                        stroke="#10b981" 
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={{ r: 4, fill: '#10b981' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-              </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                  <div className="text-center text-gray-500">
+                    <div className="text-4xl mb-2">📊</div>
+                    <div>No transaction data available</div>
+                    <div className="text-sm mt-2">Add transactions to see your balance trend</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Recent Transactions */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
                 <button
@@ -263,7 +439,7 @@ export default function Dashboard() {
                       <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
                         transaction.type === 'income' ? 'bg-emerald-100' : 'bg-gray-100'
                       }`}>
-                        <span className="text-2xl">{getTransactionIcon(transaction.type)}</span>
+                        {getTransactionIcon(transaction.type)}
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-gray-900">
