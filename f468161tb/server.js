@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import userRoutes from './src/routes/userRoutes.js';
 import categoryRoutes from './src/routes/categoryRoutes.js';
 import transactionRoutes from './src/routes/transactionRoutes.js';
-import { initializeDatabase } from './src/database/init.js';
 
 dotenv.config();
 
@@ -62,25 +61,8 @@ app.use((req, res) => {
   });
 });
 
-// Initialize database and start server
-const startServer = async () => {
-  // Start server first (don't block on database initialization)
-  app.listen(APP_PORT, () => {
-    console.log(`Server is running on port ${APP_PORT}`);
-    console.log(`API available at http://localhost:${APP_PORT}/api`);
-  });
-
-  // Initialize database in background (non-blocking)
-  try {
-    console.log('Initializing database...');
-    await initializeDatabase();
-    console.log('✓ Database initialized successfully');
-  } catch (error) {
-    console.error('⚠ Database initialization failed:', error.message);
-    console.error('⚠ Server is running but database operations may fail');
-    console.error('⚠ Please check your database connection settings');
-    // Don't exit - let the server run and retry on first request
-  }
-};
-
-startServer();
+// Start server
+app.listen(APP_PORT, () => {
+  console.log(`Server is running on port ${APP_PORT}`);
+  console.log(`API available at http://localhost:${APP_PORT}/api`);
+});
