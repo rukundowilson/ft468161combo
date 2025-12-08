@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthChange } from '@/lib/auth';
 import Sidebar from '@/app/components/Sidebar';
+import Navbar from '@/app/components/Navbar';
 
 export default function Settings() {
     const [user, setUser] = useState(null);
@@ -36,23 +37,10 @@ export default function Settings() {
             <Sidebar />
             
             <div className="flex-1 flex flex-col">
-                <header className="bg-white border-b border-gray-200 px-6 py-4 flex justify-end">
-                    <div className="flex items-center gap-3">
-                        <div className="text-right">
-                            <div className="font-medium text-gray-900">{user?.displayName || 'User'}</div>
-                            <div className="text-sm text-gray-500">{user?.email}</div>
-                        </div>
-                        <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                            <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                    </div>
-                </header>
+                <Navbar />
 
-                <main className="flex-1 p-6 overflow-y-auto">
+                <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6">Settings</h2>
                         
                         <div className="bg-white rounded-lg shadow-sm p-6">
                             <h3 className="text-xl font-semibold mb-4">Account Settings</h3>
