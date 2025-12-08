@@ -1,0 +1,12 @@
+{
+  "name": "finance-tracker-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install": "cd finance-tracker && npm install",
+    "build": "cd finance-tracker && npm run build",
+    "start": "cd finance-tracker && npm start",
+    "dev": "cd finance-tracker && npm run dev"
+  }
+}
+
