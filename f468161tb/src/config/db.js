@@ -32,9 +32,11 @@ const dbUser = envVars.USER === '' || envVars.USER === undefined
 	: (envVars.USER || process.env.DB_USER || 'root');
 
 // Log connection details (without password) for debugging
+// Note: Use DB_PORT explicitly to avoid conflicts with APP_PORT
 const dbHost = envVars.HOST || process.env.HOST || process.env.DB_HOST || 'localhost';
 const dbName = envVars.DATABASENAME || process.env.DATABASENAME || process.env.DB_NAME || 'test';
-const dbPort = parseInt(envVars.PORT || process.env.PORT || process.env.DB_PORT || '3306');
+// Prioritize DB_PORT over PORT to avoid conflicts with application port
+const dbPort = parseInt(envVars.DB_PORT || process.env.DB_PORT || envVars.PORT || process.env.PORT || '3306');
 
 console.log('Database connection config:');
 console.log(`  Host: ${dbHost}`);
