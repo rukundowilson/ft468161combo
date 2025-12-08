@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import userRoutes from './src/routes/userRoutes.js';
 import categoryRoutes from './src/routes/categoryRoutes.js';
+import transactionRoutes from './src/routes/transactionRoutes.js';
 import { initializeDatabase } from './src/database/init.js';
 
 dotenv.config();
@@ -32,7 +33,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       users: '/api/users',
-      categories: '/api/categories'
+      categories: '/api/categories',
+      transactions: '/api/transactions'
     }
   });
 });
@@ -40,6 +42,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -108,6 +108,18 @@ export default function Dashboard() {
                   </div>
                 </div>
               </button>
+              <button
+                onClick={() => router.push('/transactions')}
+                className="bg-gray-50 p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow text-left w-full"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💰</span>
+                  <div>
+                    <div className="font-medium text-gray-900">Add Transactions</div>
+                    <div className="text-sm text-gray-500 mt-1">Record your income and expenses</div>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>

@@ -47,6 +47,29 @@ export const initializeDatabase = async () => {
 
         console.log('✓ Categories table created/verified successfully');
 
+        // Create transactions table
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                category_id INT,
+                amount DECIMAL(10, 2) NOT NULL,
+                type ENUM('income', 'expense') NOT NULL,
+                description TEXT,
+                transaction_date DATE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+                INDEX idx_user_id (user_id),
+                INDEX idx_category_id (category_id),
+                INDEX idx_transaction_date (transaction_date),
+                INDEX idx_type (type)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        console.log('✓ Transactions table created/verified successfully');
+
         // Test connection
         const [rows] = await pool.execute('SELECT 1 as test');
         console.log('✓ Database connection successful');
