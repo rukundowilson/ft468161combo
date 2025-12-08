@@ -31,15 +31,27 @@ const dbUser = envVars.USER === '' || envVars.USER === undefined
 	? 'root' 
 	: (envVars.USER || process.env.DB_USER || 'root');
 
+// Log connection details (without password) for debugging
+const dbHost = envVars.HOST || process.env.HOST || process.env.DB_HOST || 'localhost';
+const dbName = envVars.DATABASENAME || process.env.DATABASENAME || process.env.DB_NAME || 'test';
+const dbPort = parseInt(envVars.PORT || process.env.PORT || process.env.DB_PORT || '3306');
+
+console.log('Database connection config:');
+console.log(`  Host: ${dbHost}`);
+console.log(`  User: ${dbUser}`);
+console.log(`  Database: ${dbName}`);
+console.log(`  Port: ${dbPort}`);
+
 const pool = mysql.createPool({
-	host: envVars.HOST || process.env.HOST || process.env.DB_HOST || 'localhost',
+	host: dbHost,
 	user: dbUser,
 	password: envVars.PASSWORD || process.env.PASSWORD || process.env.DB_PASSWORD || '',
-	database: envVars.DATABASENAME || process.env.DATABASENAME || process.env.DB_NAME || 'test',
-	port: parseInt(envVars.PORT || process.env.PORT || process.env.DB_PORT || '3306'),
+	database: dbName,
+	port: dbPort,
 	waitForConnections: true,
 	connectionLimit: 10,
 	queueLimit: 0,
+	connectTimeout: 10000, // 10 second timeout
 });
 
 export default pool;

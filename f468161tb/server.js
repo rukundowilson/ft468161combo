@@ -64,18 +64,22 @@ app.use((req, res) => {
 
 // Initialize database and start server
 const startServer = async () => {
+  // Start server first (don't block on database initialization)
+  app.listen(APP_PORT, () => {
+    console.log(`Server is running on port ${APP_PORT}`);
+    console.log(`API available at http://localhost:${APP_PORT}/api`);
+  });
+
+  // Initialize database in background (non-blocking)
   try {
-    // Initialize database tables
+    console.log('Initializing database...');
     await initializeDatabase();
-    
-    // Start server
-    app.listen(APP_PORT, () => {
-      console.log(`Server is running on port ${APP_PORT}`);
-      console.log(`API available at http://localhost:${APP_PORT}/api`);
-    });
+    console.log('✓ Database initialized successfully');
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('⚠ Database initialization failed:', error.message);
+    console.error('⚠ Server is running but database operations may fail');
+    console.error('⚠ Please check your database connection settings');
+    // Don't exit - let the server run and retry on first request
   }
 };
 
