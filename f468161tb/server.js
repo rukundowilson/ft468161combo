@@ -7,7 +7,8 @@ import transactionRoutes from './src/routes/transactionRoutes.js';
 dotenv.config();
 
 const app = express();
-const APP_PORT = 8000;
+// Use PORT from Render, or APP_PORT, or default to 8000
+const APP_PORT = process.env.PORT || process.env.APP_PORT || 8000;
 
 // Middleware
 app.use(express.json());

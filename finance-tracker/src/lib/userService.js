@@ -1,6 +1,7 @@
 import api from '@/config/axios';
 import { auth } from './firebase';
 
+
 /**
  * Sync user from Firebase to the database
  * This should be called after successful Firebase authentication
@@ -95,6 +96,39 @@ export const syncCurrentUser = async () => {
         return {
             success: false,
             error: error.message || 'Failed to sync current user'
+        };
+    }
+};
+
+/**
+ * Delete user account from database
+ */
+export const deleteUserFromDatabase = async (firebaseUid) => {
+    try {
+        if (!firebaseUid) {
+            throw new Error('Firebase UID is required');
+        }
+
+        const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+        if (token && typeof window !== 'undefined') {
+            localStorage.setItem('firebaseToken', token);
+        }
+
+        const response = await api.delete(`/users/delete?firebase_uid=${firebaseUid}`);
+        
+        if (response.data.success) {
+            return {
+                success: true,
+                message: response.data.message
+            };
+        } else {
+            throw new Error(response.data.message || 'Failed to delete user');
+        }
+    } catch (error) {
+        console.error('Error deleting user from database:', error);
+        return {
+            success: false,
+            error: error.response?.data?.message || error.message || 'Failed to delete user from database'
         };
     }
 };

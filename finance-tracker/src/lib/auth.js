@@ -6,6 +6,9 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  updateProfile,
+  updateEmail,
+  deleteUser,
 } from 'firebase/auth';
 import { auth } from './firebase';
 
@@ -36,12 +39,22 @@ export const signIn = async (email, password) => {
 };
 
 // Sign up with email and password
-export const signUp = async (email, password) => {
+export const signUp = async (email, password, fullName = null) => {
   try {
     if (!auth) {
       return { user: null, error: 'Firebase is not initialized. Please refresh the page.' };
     }
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update display name if provided
+    if (fullName && userCredential.user) {
+      await updateProfile(userCredential.user, {
+        displayName: fullName
+      });
+      // Reload user to get updated profile
+      await userCredential.user.reload();
+    }
+    
     return { user: userCredential.user, error: null };
   } catch (error) {
     // Provide user-friendly error messages
@@ -138,3 +151,60 @@ export const signInWithLink = async (email, emailLink) => {
   }
 };
 
+// Update user profile
+export const updateUserProfile = async (displayName, email = null) => {
+  try {
+    if (!auth || !auth.currentUser) {
+      return { success: false, error: 'No user is currently signed in.' };
+    }
+
+    const user = auth.currentUser;
+    const updates = {};
+
+    // Update display name if provided
+    if (displayName !== null && displayName !== user.displayName) {
+      await updateProfile(user, {
+        displayName: displayName
+      });
+      await user.reload();
+    }
+
+    // Update email if provided and different
+    if (email && email !== user.email) {
+      await updateEmail(user, email);
+      await user.reload();
+    }
+
+    return { success: true, user: auth.currentUser, error: null };
+  } catch (error) {
+    let errorMessage = error.message;
+    if (error.code === 'auth/requires-recent-login') {
+      errorMessage = 'Please sign out and sign back in to change your email.';
+    } else if (error.code === 'auth/email-already-in-use') {
+      errorMessage = 'This email is already in use by another account.';
+    } else if (error.code === 'auth/invalid-email') {
+      errorMessage = 'Invalid email address.';
+    }
+    return { success: false, error: errorMessage };
+  }
+};
+
+// Delete user account
+export const deleteUserAccount = async () => {
+  try {
+    if (!auth || !auth.currentUser) {
+      return { success: false, error: 'No user is currently signed in.' };
+    }
+
+    const user = auth.currentUser;
+    await deleteUser(user);
+
+    return { success: true, error: null };
+  } catch (error) {
+    let errorMessage = error.message;
+    if (error.code === 'auth/requires-recent-login') {
+      errorMessage = 'Please sign out and sign back in before deleting your account.';
+    }
+    return { success: false, error: errorMessage };
+  }
+};

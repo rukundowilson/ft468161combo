@@ -3,7 +3,8 @@ import {
     syncUser,
     getUserByFirebaseUid,
     getUserByEmail,
-    getAllUsers
+    getAllUsers,
+    deleteUserAccount
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -19,6 +20,9 @@ router.get('/email/:email', getUserByEmail);
 
 // Get all users
 router.get('/all', getAllUsers);
+
+// Delete user account
+router.delete('/delete', deleteUserAccount);
 
 export default router;
 

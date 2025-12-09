@@ -165,3 +165,49 @@ export const getAllUsers = async (req, res) => {
     }
 };
 
+// Delete user account and all associated data
+export const deleteUserAccount = async (req, res) => {
+    try {
+        const firebaseUid = req.user?.firebase_uid || req.query.firebase_uid;
+
+        if (!firebaseUid) {
+            return res.status(400).json({
+                success: false,
+                message: 'firebase_uid is required'
+            });
+        }
+
+        // Get user ID
+        const [users] = await pool.execute(
+            'SELECT id FROM users WHERE firebase_uid = ?',
+            [firebaseUid]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const userId = users[0].id;
+
+        // Delete all user data in a transaction
+        await pool.execute('DELETE FROM transactions WHERE user_id = ?', [userId]);
+        await pool.execute('DELETE FROM categories WHERE user_id = ?', [userId]);
+        await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+
+        return res.status(200).json({
+            success: true,
+            message: 'User account and all associated data deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting user account:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+};
+
