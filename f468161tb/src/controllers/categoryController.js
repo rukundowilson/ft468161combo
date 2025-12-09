@@ -67,20 +67,10 @@ export const getCategories = async (req, res) => {
         const firebaseUid = req.user?.firebase_uid || req.query.firebase_uid;
         const { type } = req.query; // Optional filter by type
 
-        if (!firebaseUid) {
-            return res.status(400).json({
-                success: false,
-                message: 'firebase_uid is required'
-            });
-        }
-
         const userId = await getUserIdFromFirebaseUid(firebaseUid);
 
-        // Build query: if userId exists, get user's categories + defaults, otherwise just defaults
-        let query = userId 
-            ? 'SELECT * FROM categories WHERE user_id = ? OR user_id IS NULL'
-            : 'SELECT * FROM categories WHERE user_id IS NULL';
-        let params = userId ? [userId] : [];
+        let query = 'SELECT * FROM categories WHERE user_id = ? OR user_id IS NULL';
+        let params = [userId];
 
         if (type && ['income', 'expense'].includes(type)) {
             query += ' AND type = ?';
